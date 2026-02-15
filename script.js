@@ -91,11 +91,12 @@ onAuthStateChanged(auth, (user) => {
 
 
 // ===== SEND =====
-window.sendMessage = function () {
-  if (!currentUser || !input.value) return;
+sendBtn.onclick = () => {
+  const text = input.value.trim();
+  if (!currentUser || !text) return;
 
   push(messagesRef, {
-    text: input.value,
+    text: text,
     user: currentUser.displayName,
     photo: currentUser.photoURL,
     uid: currentUser.uid,
@@ -103,8 +104,10 @@ window.sendMessage = function () {
   });
 
   input.value = "";
+  input.focus();
 };
 
+input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
 
 // ===== RECEIVE =====
 onChildAdded(messagesRef, (snap) => {
@@ -123,3 +126,4 @@ onChildAdded(messagesRef, (snap) => {
   messagesDiv.appendChild(el);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
+
