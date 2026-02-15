@@ -107,7 +107,7 @@ sendBtn.onclick = () => {
   input.focus();
 };
 
-input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
+
 
 // ===== RECEIVE =====
 onChildAdded(messagesRef, (snap) => {
@@ -126,4 +126,5 @@ onChildAdded(messagesRef, (snap) => {
   messagesDiv.appendChild(el);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
+
 
