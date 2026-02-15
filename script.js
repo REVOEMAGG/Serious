@@ -90,23 +90,46 @@ onAuthStateChanged(auth, (user) => {
 });
 
 
-// ===== SEND =====
-sendBtn.onclick = () => {
-  const text = input.value.trim();
-  if (!currentUser || !text) return;
+// ===== SEND (УЛУЧШЕННЫЙ) =====
+const sendBtn = document.getElementById("send");
 
+function sendMessage() {
+  const text = msgInput.value.trim(); // Убираем лишние пробелы
+  
+  if (!currentUser) {
+    alert("Сначала войдите в аккаунт!");
+    return;
+  }
+  
+  if (!text) return; // Не отправляем пустоту
+
+  // Отправка в Firebase
   push(messagesRef, {
     text: text,
     user: currentUser.displayName,
     photo: currentUser.photoURL,
     uid: currentUser.uid,
     time: Date.now()
+  }).then(() => {
+    // После успешной отправки
+    msgInput.value = ""; // Очищаем поле
+    msgInput.focus();    // Возвращаем курсор в поле
+  }).catch((err) => {
+    console.error("Ошибка отправки:", err);
+    alert("Не удалось отправить сообщение.");
   });
+}
 
-  input.value = "";
-  input.focus();
+// Отправка по клику на кнопку
+sendBtn.onclick = sendMessage;
+
+// Отправка по нажатию Enter
+msgInput.onkeydown = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter позволит делать перенос строки, если надо
+    e.preventDefault(); // Чтобы страница не дергалась
+    sendMessage();
+  }
 };
-
 
 
 // ===== RECEIVE =====
@@ -126,5 +149,6 @@ onChildAdded(messagesRef, (snap) => {
   messagesDiv.appendChild(el);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
+
 
 
