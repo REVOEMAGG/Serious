@@ -59,7 +59,7 @@ let currentChat = null;
 // ===== ADMIN =====
 // вставь свой UID после входа
 const admins = [
-  "ТВОЙ_UID"
+  "3tNh1mfm7FYlIGhwZTnY8Csp1GG3"
 ];
 
 
@@ -187,6 +187,7 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
