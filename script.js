@@ -14,11 +14,11 @@ import {
   push,
   set,
   onValue,
-  onChildAdded,
-  remove
+  onChildAdded
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 
+// ===== CONFIG =====
 // ===== CONFIG =====
 const firebaseConfig = {
   apiKey: "AIzaSyBUiPq1MDLb62Zl0Q0o-9Dl-Gbg7bL0Aik",
@@ -31,24 +31,24 @@ const firebaseConfig = {
 };
 
 
+
 // ===== INIT =====
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
 const db = getDatabase(app);
 
 
 // ===== DOM =====
 const googleBtn = document.getElementById("googleBtn");
 const logoutBtn = document.getElementById("logout");
-
 const loginScreen = document.getElementById("login");
 const chatScreen = document.getElementById("chat");
 
 const userBox = document.getElementById("users");
 const messagesDiv = document.getElementById("messages");
-const input = document.getElementById("msgInput");
+const msgInput = document.getElementById("msgInput");
+const sendBtn = document.getElementById("send");
 
 
 // ===== STATE =====
@@ -57,7 +57,7 @@ let currentChat = null;
 
 
 // ===== ADMIN =====
-// вставь свой UID после входа
+// сюда вставь свой UID
 const admins = [
   "3tNh1mfm7FYlIGhwZTnY8Csp1GG3"
 ];
@@ -68,8 +68,8 @@ googleBtn.onclick = async () => {
   try {
     await signInWithPopup(auth, provider);
   } catch (e) {
-    console.error(e);
     alert("Ошибка входа");
+    console.error(e);
   }
 };
 
@@ -83,11 +83,10 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
 
-    // экран
     loginScreen.classList.add("hidden");
     chatScreen.classList.remove("hidden");
 
-    // сохранить пользователя
+    // сохраняем пользователя
     set(ref(db, "users/" + user.uid), {
       name: user.displayName,
       photo: user.photoURL,
@@ -130,15 +129,19 @@ function loadUsers() {
       `;
 
       div.onclick = () => openChat(uid);
-      userBox.appendChild(div);
 
-      // админ кнопка удаления
+      // админ кнопка
       if (admins.includes(currentUser.uid)) {
-        const del = document.createElement("button");
-        del.innerText = "Ban";
-        del.onclick = () => banUser(uid);
-        div.appendChild(del);
+        const btn = document.createElement("button");
+        btn.innerText = "Ban";
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          banUser(uid);
+        };
+        div.appendChild(btn);
       }
+
+      userBox.appendChild(div);
     }
   });
 }
@@ -161,22 +164,25 @@ function openChat(uid) {
     const el = document.createElement("div");
     el.className = "message";
 
-    if (d.uid === currentUser.uid) el.classList.add("me");
+    if (d.uid === currentUser.uid) {
+      el.classList.add("me");
+    }
 
     el.innerText = d.text;
     messagesDiv.appendChild(el);
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
 
 
+// ===== SEND =====
+sendBtn.onclick = sendMessage;
+
 function sendMessage() {
+  if (!currentUser || !currentChat) return;
+
   const text = msgInput.value.trim();
-
-  if (!currentUser) {
-    alert("Сначала войдите в аккаунт!");
-    return;
-  }
-
   if (!text) return;
 
   push(ref(db, "chats/" + currentChat), {
@@ -193,6 +199,7 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
