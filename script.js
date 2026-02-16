@@ -169,24 +169,32 @@ function openChat(uid) {
 }
 
 
-// ===== SEND (УЛУЧШЕННЫЙ) =====
-const sendBtn = document.getElementById("send");
-
 function sendMessage() {
-  const text = msgInput.value.trim(); // Убираем лишние пробелы
-  
+  const text = input.value.trim();
+
   if (!currentUser) {
-    alert("Сначала войдите в аккаунт!");
+    alert("Сначала войдите!");
     return;
   }
-  
-  if (!text) return; // Не отправляем пустоту
+
+  if (!text || !currentChat) return;
+
+  push(ref(db, "chats/" + currentChat), {
+    text,
+    uid: currentUser.uid,
+    time: Date.now()
+  });
+
+  input.value = "";
+}
+
 
 
 // ===== ADMIN =====
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
