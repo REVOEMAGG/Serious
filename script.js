@@ -177,17 +177,28 @@ function openChat(uid) {
 
 
 // ===== SEND =====
-sendBtn.onclick = sendMessage;
+const sendBtn = document.getElementById("send");
+
+sendBtn.addEventListener("click", sendMessage);
 
 function sendMessage() {
-  if (!currentUser || !currentChat) return;
+  if (!currentUser) {
+    alert("Сначала войди");
+    return;
+  }
+
+  if (!currentChat) {
+    alert("Выбери пользователя слева");
+    return;
+  }
 
   const text = msgInput.value.trim();
-  if (!text) return;
+  if (text === "") return;
 
   push(ref(db, "chats/" + currentChat), {
     text: text,
     uid: currentUser.uid,
+    name: currentUser.displayName,
     time: Date.now()
   });
 
@@ -195,10 +206,12 @@ function sendMessage() {
 }
 
 
+
 // ===== ADMIN =====
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
