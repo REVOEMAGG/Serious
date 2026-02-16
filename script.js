@@ -12,7 +12,10 @@ import {
   getDatabase,
   ref,
   push,
-  onChildAdded
+  set,
+  onValue,
+  onChildAdded,
+  remove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 
@@ -34,7 +37,6 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 const db = getDatabase(app);
-const messagesRef = ref(db, "messages");
 
 
 // ===== DOM =====
@@ -48,7 +50,17 @@ const userBox = document.getElementById("users");
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("msgInput");
 
+
+// ===== STATE =====
 let currentUser = null;
+let currentChat = null;
+
+
+// ===== ADMIN =====
+// вставь свой UID после входа
+const admins = [
+  "ТВОЙ_UID"
+];
 
 
 // ===== LOGIN =====
@@ -56,38 +68,105 @@ googleBtn.onclick = async () => {
   try {
     await signInWithPopup(auth, provider);
   } catch (e) {
-    console.error("LOGIN ERROR:", e);
-    alert("Google login не работает. Проверь popup.");
+    console.error(e);
+    alert("Ошибка входа");
   }
 };
 
 
 // ===== LOGOUT =====
-logoutBtn.onclick = () => {
-  signOut(auth);
-};
+logoutBtn.onclick = () => signOut(auth);
 
 
-// ===== USER =====
+// ===== AUTH =====
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
 
-    // переключение экранов
+    // экран
     loginScreen.classList.add("hidden");
     chatScreen.classList.remove("hidden");
 
-    userBox.innerHTML = `
-      <img src="${user.photoURL}" width="35" style="border-radius:50%">
-      ${user.displayName}
-    `;
+    // сохранить пользователя
+    set(ref(db, "users/" + user.uid), {
+      name: user.displayName,
+      photo: user.photoURL,
+      email: user.email
+    });
+
+    // проверка бана
+    onValue(ref(db, "banned/" + user.uid), (snap) => {
+      if (snap.exists()) {
+        alert("Вы забанены");
+        signOut(auth);
+      }
+    });
+
+    loadUsers();
 
   } else {
     loginScreen.classList.remove("hidden");
     chatScreen.classList.add("hidden");
-    userBox.innerHTML = "";
   }
 });
+
+
+// ===== USERS =====
+function loadUsers() {
+  onValue(ref(db, "users"), (snap) => {
+    const data = snap.val();
+    userBox.innerHTML = "";
+
+    for (let uid in data) {
+      if (uid === currentUser.uid) continue;
+
+      const u = data[uid];
+
+      const div = document.createElement("div");
+      div.className = "user";
+      div.innerHTML = `
+        <img src="${u.photo}" width="35" style="border-radius:50%">
+        ${u.name}
+      `;
+
+      div.onclick = () => openChat(uid);
+      userBox.appendChild(div);
+
+      // админ кнопка удаления
+      if (admins.includes(currentUser.uid)) {
+        const del = document.createElement("button");
+        del.innerText = "Ban";
+        del.onclick = () => banUser(uid);
+        div.appendChild(del);
+      }
+    }
+  });
+}
+
+
+// ===== CHAT =====
+function createChatID(a, b) {
+  return a < b ? a + "_" + b : b + "_" + a;
+}
+
+function openChat(uid) {
+  currentChat = createChatID(currentUser.uid, uid);
+  messagesDiv.innerHTML = "";
+
+  const chatRef = ref(db, "chats/" + currentChat);
+
+  onChildAdded(chatRef, (snap) => {
+    const d = snap.val();
+
+    const el = document.createElement("div");
+    el.className = "message";
+
+    if (d.uid === currentUser.uid) el.classList.add("me");
+
+    el.innerText = d.text;
+    messagesDiv.appendChild(el);
+  });
+}
 
 
 // ===== SEND (УЛУЧШЕННЫЙ) =====
@@ -103,52 +182,12 @@ function sendMessage() {
   
   if (!text) return; // Не отправляем пустоту
 
-  // Отправка в Firebase
-  push(messagesRef, {
-    text: text,
-    user: currentUser.displayName,
-    photo: currentUser.photoURL,
-    uid: currentUser.uid,
-    time: Date.now()
-  }).then(() => {
-    // После успешной отправки
-    msgInput.value = ""; // Очищаем поле
-    msgInput.focus();    // Возвращаем курсор в поле
-  }).catch((err) => {
-    console.error("Ошибка отправки:", err);
-    alert("Не удалось отправить сообщение.");
-  });
+
+// ===== ADMIN =====
+function banUser(uid) {
+  set(ref(db, "banned/" + uid), true);
 }
 
-// Отправка по клику на кнопку
-sendBtn.onclick = sendMessage;
-
-// Отправка по нажатию Enter
-msgInput.onkeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter позволит делать перенос строки, если надо
-    e.preventDefault(); // Чтобы страница не дергалась
-    sendMessage();
-  }
-};
-
-
-// ===== RECEIVE =====
-onChildAdded(messagesRef, (snap) => {
-  const d = snap.val();
-
-  const el = document.createElement("div");
-  el.classList.add("message");
-
-  if (d.uid === currentUser?.uid) el.classList.add("me");
-
-  el.innerHTML = `
-    <b>${d.user}</b><br>
-    ${d.text}
-  `;
-
-  messagesDiv.appendChild(el);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-});
 
 
 
