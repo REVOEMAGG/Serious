@@ -170,30 +170,30 @@ function openChat(uid) {
 
 
 function sendMessage() {
-  const text = input.value.trim();
+  const text = msgInput.value.trim();
 
   if (!currentUser) {
-    alert("Сначала войдите!");
+    alert("Сначала войдите в аккаунт!");
     return;
   }
 
-  if (!text || !currentChat) return;
+  if (!text) return;
 
   push(ref(db, "chats/" + currentChat), {
-    text,
+    text: text,
     uid: currentUser.uid,
     time: Date.now()
   });
 
-  input.value = "";
+  msgInput.value = "";
 }
-
 
 
 // ===== ADMIN =====
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
