@@ -239,6 +239,37 @@ window.deleteMsg = function(msgId) {
 };
 
 
+const backBtn = document.getElementById("backBtn");
+
+// открыть чат
+function openChat(uid) {
+  currentChat = createChatID(currentUser.uid, uid);
+  messagesDiv.innerHTML = "";
+
+  const chatRef = ref(db, "chats/" + currentChat);
+
+  onChildAdded(chatRef, (snap) => {
+    const d = snap.val();
+
+    const el = document.createElement("div");
+    el.className = "message";
+
+    if (d.uid === currentUser.uid) el.classList.add("me");
+
+    el.innerText = d.text;
+    messagesDiv.appendChild(el);
+  });
+
+  // 📱 mobile
+  if (window.innerWidth < 768) {
+    document.querySelector(".chat").classList.add("active");
+  }
+}
+
+// кнопка назад
+backBtn.onclick = () => {
+  document.querySelector(".chat").classList.remove("active");
+};
 
 
 
