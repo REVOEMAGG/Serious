@@ -156,9 +156,86 @@ color:white;
 }
 
 
-@media(max-width:700px){
-.sidebar{
-display:none;
+/* Основные стили (Desktop / Ноутбуки) - уже должны быть у тебя */
+#chat {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 90vh;
 }
+
+#users {
+  width: 300px; /* Боковая панель с пользователями */
+  border-right: 1px solid #ccc;
 }
+
+#messages {
+  flex-grow: 1;
+}
+
+/* ===== ПЛАНШЕТЫ (до 992px) ===== */
+@media (max-width: 992px) {
+  #users {
+    width: 200px; /* Сужаем список пользователей */
+  }
+}
+
+/* ===== ТЕЛЕФОНЫ (до 600px) ===== */
+@media (max-width: 600px) {
+  #chat {
+    flex-direction: column; /* Список пользователей сверху, чат снизу */
+    height: 100vh;
+    margin: 0;
+  }
+
+  #users {
+    width: 100%;
+    height: 80px; /* Делаем горизонтальный список пользователей */
+    display: flex;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
+  }
+
+  .user {
+    min-width: 60px;
+    flex-direction: column;
+    font-size: 10px;
+    text-align: center;
+    padding: 5px;
+  }
+
+  .user img {
+    width: 30px;
+    height: 30px;
+  }
+
+  #messages {
+    height: calc(100vh - 180px); /* Высчитываем место под ввод текста */
+  }
+
+  .message {
+    max-width: 85%; /* На телефонах сообщения шире */
+  }
+
+  /* Панель ввода */
+  .input-area {
+    padding: 10px;
+    display: flex;
+  }
+
+  #msgInput {
+    flex-grow: 1;
+  }
+}
+
+/* ===== МАЛЕНЬКИЕ ТЕЛЕФОНЫ (до 400px) ===== */
+@media (max-width: 400px) {
+  .user span {
+    display: none; /* Скрываем имена, оставляем только аватарки */
+  }
+}
+
+
 
