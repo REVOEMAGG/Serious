@@ -177,8 +177,6 @@ function openChat(uid) {
 
 
 // ===== SEND =====
-const sendBtn = document.getElementById("send");
-
 sendBtn.addEventListener("click", sendMessage);
 
 function sendMessage() {
@@ -193,7 +191,7 @@ function sendMessage() {
   }
 
   const text = msgInput.value.trim();
-  if (text === "") return;
+  if (!text) return;
 
   push(ref(db, "chats/" + currentChat), {
     text: text,
@@ -211,6 +209,7 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
