@@ -14,8 +14,7 @@ import {
   push,
   set,
   onValue,
-  onChildAdded,
-  off
+  onChildAdded
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 
@@ -55,7 +54,7 @@ const sendBtn = document.getElementById("send");
 // ===== STATE =====
 let currentUser = null;
 let currentChat = null;
-
+let unsubscribeChat = null;
 
 // ===== ADMIN =====
 // сюда вставь свой UID
@@ -154,9 +153,9 @@ function createChatID(a, b) {
 }
 
 function openChat(uid) {
-  // Если какой-то чат уже был открыт, отключаем его слушатель
-  if (currentChat) {
-    off(ref(db, "chats/" + currentChat));
+  // 1. Если уже есть активный слушатель — вызываем его, чтобы ОСТАНОВИТЬ
+  if (unsubscribeChat) {
+    unsubscribeChat();
   }
 
   currentChat = createChatID(currentUser.uid, uid);
@@ -164,8 +163,9 @@ function openChat(uid) {
 
   const chatRef = ref(db, "chats/" + currentChat);
 
-  // Теперь вешаем новый слушатель
-  onChildAdded(chatRef, (snap) => {
+  // 2. Сохраняем новую отписку в переменную
+  // В Firebase v9+ onChildAdded возвращает функцию для отписки
+  unsubscribeChat = onChildAdded(chatRef, (snap) => {
     const d = snap.val();
     const el = document.createElement("div");
     el.className = "message";
@@ -179,6 +179,7 @@ function openChat(uid) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
+
 
 
 
@@ -215,6 +216,7 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
