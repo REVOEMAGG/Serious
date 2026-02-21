@@ -14,7 +14,8 @@ import {
   push,
   set,
   onValue,
-  onChildAdded
+  onChildAdded,
+  off
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 
@@ -153,14 +154,19 @@ function createChatID(a, b) {
 }
 
 function openChat(uid) {
+  // Если какой-то чат уже был открыт, отключаем его слушатель
+  if (currentChat) {
+    off(ref(db, "chats/" + currentChat));
+  }
+
   currentChat = createChatID(currentUser.uid, uid);
   messagesDiv.innerHTML = "";
 
   const chatRef = ref(db, "chats/" + currentChat);
 
+  // Теперь вешаем новый слушатель
   onChildAdded(chatRef, (snap) => {
     const d = snap.val();
-
     const el = document.createElement("div");
     el.className = "message";
 
@@ -170,10 +176,10 @@ function openChat(uid) {
 
     el.innerText = d.text;
     messagesDiv.appendChild(el);
-
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
+
 
 
 // ===== SEND =====
@@ -209,6 +215,7 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
 
 
 
