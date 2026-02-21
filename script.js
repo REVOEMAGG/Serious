@@ -15,6 +15,7 @@ import {
   set,
   onValue,
   onChildAdded,
+  onChildRemoved,
   remove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -154,9 +155,8 @@ function createChatID(a, b) {
 }
 
 function openChat(uid) {
-  // 1. Если уже есть активный слушатель — вызываем его, чтобы ОСТАНОВИТЬ
-  if (unsubscribeChat) {
-    unsubscribeChat();
+  if (currentChat) {
+    off(ref(db, "chats/" + currentChat));
   }
 
   currentChat = createChatID(currentUser.uid, uid);
@@ -164,39 +164,35 @@ function openChat(uid) {
 
   const chatRef = ref(db, "chats/" + currentChat);
 
-  // 2. Сохраняем новую отписку в переменную
-  // В Firebase v9+ onChildAdded возвращает функцию для отписки
-  unsubscribeChat = onChildAdded(chatRef, (snap) => {
+  // Слушатель НОВЫХ сообщений
+  onChildAdded(chatRef, (snap) => {
     const d = snap.val();
-    const messageId = snap.key; // Получаем ID сообщения
+    const msgId = snap.key; // ID сообщения в базе
 
     const el = document.createElement("div");
     el.className = "message";
+    el.id = "msg-" + msgId; // Чтобы потом удалить из DOM
+    if (d.uid === currentUser.uid) el.classList.add("me");
 
-    if (d.uid === currentUser.uid) {
-      el.classList.add("me");
-    }
-
-    // Текст сообщения
-    const textSpan = document.createElement("span");
-    textSpan.innerText = d.text;
-    el.appendChild(textSpan);
-
-    // Кнопка удаления (показываем, если это наше сообщение или мы админ)
-    if (d.uid === currentUser.uid || admins.includes(currentUser.uid)) {
-      const delBtn = document.createElement("button");
-      delBtn.innerText = "❌";
-      delBtn.className = "delete-btn";
-      delBtn.onclick = () => deleteMessage(messageId);
-      el.appendChild(delBtn);
-    }
-
-    // Добавляем ID к элементу, чтобы потом его легко найти и удалить из DOM
-    el.id = "msg-" + messageId;
+    // Создаем контент: текст + кнопка (если автор — ты или админ)
+    const canDelete = d.uid === currentUser.uid || admins.includes(currentUser.uid);
+    
+    el.innerHTML = `
+      <span>${d.text}</span>
+      ${canDelete ? `<button class="del-btn" onclick="deleteMsg('${msgId}')">❌</button>` : ""}
+    `;
 
     messagesDiv.appendChild(el);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
+
+  // Слушатель УДАЛЕНИЯ (чтобы исчезало у всех сразу)
+  onChildRemoved(chatRef, (snap) => {
+    const el = document.getElementById("msg-" + snap.key);
+    if (el) el.remove();
+  });
+}
+
 
 
 
@@ -235,22 +231,13 @@ function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
 
-// Функция для удаления из базы
-function deleteMessage(msgId) {
+window.deleteMsg = function(msgId) {
   if (confirm("Удалить сообщение?")) {
-    remove(ref(db, "chats/" + currentChat + "/" + msgId));
+    const msgRef = ref(db, "chats/" + currentChat + "/" + msgId);
+    remove(msgRef).catch(err => console.error("Ошибка удаления:", err));
   }
-}
+};
 
-// Добавь это в openChat ПЕРЕД onChildAdded, чтобы ловить удаление
-// (Вставь это внутрь функции openChat)
-import { onChildRemoved } from "https://www.gstatic.com";
-// Примечание: onChildRemoved тоже нужно добавить в список импортов сверху!
-
-onChildRemoved(ref(db, "chats/" + currentChat), (snap) => {
-  const el = document.getElementById("msg-" + snap.key);
-  if (el) el.remove(); // Удаляем элемент из HTML
-});
 
 
 
