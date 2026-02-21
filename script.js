@@ -14,7 +14,8 @@ import {
   push,
   set,
   onValue,
-  onChildAdded
+  onChildAdded,
+  remove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 
@@ -167,6 +168,8 @@ function openChat(uid) {
   // В Firebase v9+ onChildAdded возвращает функцию для отписки
   unsubscribeChat = onChildAdded(chatRef, (snap) => {
     const d = snap.val();
+    const messageId = snap.key; // Получаем ID сообщения
+
     const el = document.createElement("div");
     el.className = "message";
 
@@ -174,11 +177,26 @@ function openChat(uid) {
       el.classList.add("me");
     }
 
-    el.innerText = d.text;
+    // Текст сообщения
+    const textSpan = document.createElement("span");
+    textSpan.innerText = d.text;
+    el.appendChild(textSpan);
+
+    // Кнопка удаления (показываем, если это наше сообщение или мы админ)
+    if (d.uid === currentUser.uid || admins.includes(currentUser.uid)) {
+      const delBtn = document.createElement("button");
+      delBtn.innerText = "❌";
+      delBtn.className = "delete-btn";
+      delBtn.onclick = () => deleteMessage(messageId);
+      el.appendChild(delBtn);
+    }
+
+    // Добавляем ID к элементу, чтобы потом его легко найти и удалить из DOM
+    el.id = "msg-" + messageId;
+
     messagesDiv.appendChild(el);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
-}
 
 
 
@@ -216,6 +234,26 @@ function sendMessage() {
 function banUser(uid) {
   set(ref(db, "banned/" + uid), true);
 }
+
+// Функция для удаления из базы
+function deleteMessage(msgId) {
+  if (confirm("Удалить сообщение?")) {
+    remove(ref(db, "chats/" + currentChat + "/" + msgId));
+  }
+}
+
+// Добавь это в openChat ПЕРЕД onChildAdded, чтобы ловить удаление
+// (Вставь это внутрь функции openChat)
+import { onChildRemoved } from "https://www.gstatic.com";
+// Примечание: onChildRemoved тоже нужно добавить в список импортов сверху!
+
+onChildRemoved(ref(db, "chats/" + currentChat), (snap) => {
+  const el = document.getElementById("msg-" + snap.key);
+  if (el) el.remove(); // Удаляем элемент из HTML
+});
+
+
+
 
 
 
